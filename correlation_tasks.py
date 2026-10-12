@@ -1,15 +1,39 @@
 """Задачи второй части лабораторной: корреляционный анализ."""
 from __future__ import annotations
 
-from grader_contracts.correlation_tasks import BrainCorrelationSummary, BrainDataInput
+import pandas as pd
+
+from grader_contracts.correlation_tasks import (
+    BrainCorrelationSummary,
+    BrainDataInput,
+)
 
 
 def analyze_brain_correlations(data: BrainDataInput) -> BrainCorrelationSummary:
-    """Проанализируйте brainsize.txt.
+    df = pd.read_csv(data.path, sep="\t")
+    df = df.fillna(df.mean(numeric_only=True))
+    males = df[df["Sex"] == "Male"]
+    females = df[df["Sex"] == "Female"]
+    features = ["FSIO", "VIQ", "PIQ", "Weight", "Height"]
+    male_corr = {}
+    for f in features:
+        male_corr[f] = males[f].corr(males["MRI_Count"])
+    female_corr = {}
+    for f in features:
+        female_corr[f] = females[f].corr(females["MRI_Count"])
+    all_corr = {}
+    for f in features:
+        all_corr[f] = (male_corr[f] + female_corr[f]) / 2
 
-    Разделите наблюдения по полу и для каждой группы вычислите корреляции
-    признаков FSIQ, VIQ, PIQ, Weight, Height с MRI_Count методом Пирсона.
-    В strongest_mri_feature верните название признака с наибольшим модулем
-    корреляции с MRI_Count среди объединённых результатов двух групп.
-    """
-    raise NotImplementedError
+    strongest = None
+    max_corr = -2  
+    for f in features:
+        if all_corr[f] > max_corr:
+            max_corr = all_corr[f]
+            strongest = f
+
+    return BrainCorrelationSummary(
+        male_correlations=male_corr,
+        female_correlations=female_corr,
+        strongest_mri_feature=strongest,
+    )
