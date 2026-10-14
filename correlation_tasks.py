@@ -10,26 +10,25 @@ from grader_contracts.correlation_tasks import (
 
 
 def analyze_brain_correlations(data: BrainDataInput) -> BrainCorrelationSummary:
-    df = pd.read_csv(data.path, sep="\t")
-    df = df.fillna(df.mean(numeric_only=True))
+    df = pd.read_csv(data.path, sep="\t", na_values=["NA"])
     males = df[df["Sex"] == "Male"]
     females = df[df["Sex"] == "Female"]
-    features = ["FSIO", "VIQ", "PIQ", "Weight", "Height"]
+    features = ["FSIQ", "VIQ", "PIQ", "Weight", "Height"]
     male_corr = {}
     for f in features:
         male_corr[f] = males[f].corr(males["MRI_Count"])
     female_corr = {}
     for f in features:
         female_corr[f] = females[f].corr(females["MRI_Count"])
-    all_corr = {}
-    for f in features:
-        all_corr[f] = (male_corr[f] + female_corr[f]) / 2
-
+    
     strongest = None
-    max_corr = -2  
+    max_abs_corr = -1  
     for f in features:
-        if all_corr[f] > max_corr:
-            max_corr = all_corr[f]
+        if abs(male_corr[f]) > max_abs_corr:
+            max_abs_corr = abs(male_corr[f])
+            strongest = f
+        if abs(female_corr[f]) > max_abs_corr:
+            max_abs_corr = abs(female_corr[f])
             strongest = f
 
     return BrainCorrelationSummary(
